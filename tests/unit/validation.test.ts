@@ -9,29 +9,7 @@ import {
   base64ByteLength,
 } from "../../src/tools/validation.js";
 import { ValidationError, RecipientDomainError, AttachmentTooLargeError, DocumentAllowlistError } from "../../src/errors.js";
-import type { Config } from "../../src/config.js";
-
-function baseConfig(overrides: Partial<Config> = {}): Config {
-  return {
-    GOOGLE_CLIENT_ID: "id",
-    GOOGLE_CLIENT_SECRET: "secret",
-    GOOGLE_TOKEN_PATH: "~/.config/google-workspace-mcp/token.json",
-    ENABLE_GMAIL_SEND: true,
-    ENABLE_GMAIL_DRAFTS: true,
-    ENABLE_DOCS_APPEND: true,
-    DRY_RUN: false,
-    ALLOWED_RECIPIENT_DOMAINS: [],
-    MAX_RECIPIENTS: 50,
-    MAX_ATTACHMENT_MB: 20,
-    ALLOWED_DOCUMENT_IDS: [],
-    MCP_TRANSPORT: "stdio",
-    MCP_HTTP_PORT: 8080,
-    MCP_HTTP_HOST: "127.0.0.1",
-    MCP_AUTH_TOKEN: undefined,
-    LOG_LEVEL: "info",
-    ...overrides,
-  };
-}
+import { makeTestConfig as baseConfig } from "../testConfig.js";
 
 describe("isValidEmail", () => {
   it("accepts well-formed addresses", () => {

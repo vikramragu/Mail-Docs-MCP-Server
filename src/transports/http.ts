@@ -7,12 +7,21 @@ import { logger } from "../logger.js";
 const LOCALHOST_NAMES = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
 
 /**
- * DNS-rebinding protection: if we're bound to a localhost address, only
- * accept requests whose Origin also resolves to localhost. Requests with no
- * Origin header (non-browser MCP clients) are allowed through.
+ * DNS-rebinding protection. `boundHost` is the address the process *binds*
+ * to (e.g. 127.0.0.1 locally, 0.0.0.0 on a host like Railway) — it is NOT
+ * the public hostname browsers see, so it can only be compared against the
+ * Origin header when running on localhost. For a real public deployment,
+ * `allowedOrigins` (MCP_ALLOWED_ORIGINS) must be set to the exact public
+ * origin(s) expected (e.g. "https://your-app.up.railway.app"); otherwise
+ * every request carrying an Origin header would be rejected once bound to
+ * 0.0.0.0. Requests with no Origin header (non-browser MCP clients) are
+ * always allowed through.
  */
-function isOriginAllowed(origin: string | undefined, boundHost: string): boolean {
+function isOriginAllowed(origin: string | undefined, boundHost: string, allowedOrigins: string[]): boolean {
   if (!origin) return true;
+  if (allowedOrigins.length > 0) {
+    return allowedOrigins.some((allowed) => allowed.toLowerCase() === origin.toLowerCase());
+  }
   try {
     const originHost = new URL(origin).hostname;
     if (LOCALHOST_NAMES.has(boundHost)) {
@@ -26,7 +35,7 @@ function isOriginAllowed(origin: string | undefined, boundHost: string): boolean
 
 function originGuard(config: Config) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!isOriginAllowed(req.headers.origin, config.MCP_HTTP_HOST)) {
+    if (!isOriginAllowed(req.headers.origin, config.MCP_HTTP_HOST, config.MCP_ALLOWED_ORIGINS)) {
       res.status(403).json({ error: "Origin not allowed" });
       return;
     }
@@ -47,6 +56,13 @@ function bearerAuthGuard(config: Config) {
 
 export function buildHttpApp(config: Config): Express {
   const app = express();
+
+  // Unauthenticated health check for platform load balancers (e.g. Railway),
+  // registered before the auth/origin guards so it needs neither.
+  app.get("/healthz", (_req, res) => {
+    res.sendStatus(200);
+  });
+
   app.use(express.json({ limit: "25mb" }));
   app.use(originGuard(config));
   app.use(bearerAuthGuard(config));

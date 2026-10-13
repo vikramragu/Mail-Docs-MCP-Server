@@ -10,6 +10,10 @@ export function resolveTokenPath(configuredPath: string): string {
   return configuredPath;
 }
 
+export function tokenFileExists(tokenPath: string): boolean {
+  return existsSync(resolveTokenPath(tokenPath));
+}
+
 export function loadTokens(tokenPath: string): Credentials | undefined {
   const resolved = resolveTokenPath(tokenPath);
   if (!existsSync(resolved)) return undefined;

@@ -111,4 +111,66 @@ describe("HTTP transport (§8.2 / §6 §12)", () => {
     });
     expect(res.status).toBe(405);
   });
+
+  it("serves GET /healthz with no auth required", async () => {
+    const res = await fetch(baseUrl.replace("/mcp", "/healthz"));
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("HTTP transport — MCP_ALLOWED_ORIGINS (public deployment, e.g. Railway)", () => {
+  let publicServer: Server;
+  let publicBaseUrl: string;
+
+  beforeAll(async () => {
+    // Simulates binding to 0.0.0.0 (as a real public deployment must) with an
+    // explicit public-origin allowlist, per deployment-plan.md §0.1 — without
+    // this, isOriginAllowed's old localhost-only fallback would reject every
+    // request carrying an Origin header once MCP_HTTP_HOST isn't localhost.
+    const app = buildHttpApp(
+      makeTestConfig({
+        MCP_AUTH_TOKEN: AUTH_TOKEN,
+        DRY_RUN: true,
+        MCP_HTTP_HOST: "0.0.0.0",
+        MCP_ALLOWED_ORIGINS: ["https://my-app.up.railway.app"],
+      }),
+    );
+    await new Promise<void>((resolve) => {
+      publicServer = app.listen(0, "127.0.0.1", () => resolve());
+    });
+    const address = publicServer.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    publicBaseUrl = `http://127.0.0.1:${port}/mcp`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => publicServer.close(() => resolve()));
+  });
+
+  it("accepts a request whose Origin is on the allowlist", async () => {
+    const res = await fetch(publicBaseUrl, {
+      method: "POST",
+      headers: { ...MCP_HEADERS, Authorization: `Bearer ${AUTH_TOKEN}`, Origin: "https://my-app.up.railway.app" },
+      body: JSON.stringify(rpc("tools/list")),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects a request whose Origin is not on the allowlist", async () => {
+    const res = await fetch(publicBaseUrl, {
+      method: "POST",
+      headers: { ...MCP_HEADERS, Authorization: `Bearer ${AUTH_TOKEN}`, Origin: "https://evil.example.com" },
+      body: JSON.stringify(rpc("tools/list")),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("still accepts a request with no Origin header at all", async () => {
+    const res = await fetch(publicBaseUrl, {
+      method: "POST",
+      headers: { ...MCP_HEADERS, Authorization: `Bearer ${AUTH_TOKEN}` },
+      body: JSON.stringify(rpc("tools/list")),
+    });
+    expect(res.status).toBe(200);
+  });
 });

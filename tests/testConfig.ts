@@ -17,6 +17,7 @@ export function makeTestConfig(overrides: Partial<Config> = {}): Config {
     MCP_HTTP_PORT: 8080,
     MCP_HTTP_HOST: "127.0.0.1",
     MCP_AUTH_TOKEN: undefined,
+    MCP_ALLOWED_ORIGINS: [],
     LOG_LEVEL: "error",
     ...overrides,
   };

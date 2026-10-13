@@ -5,6 +5,7 @@ import { setLogLevel, logger, type LogLevel } from "./logger.js";
 import { createServer } from "./server.js";
 import { runStdioTransport } from "./transports/stdio.js";
 import { runHttpTransport } from "./transports/http.js";
+import { bootstrapTokenFromEnv } from "./auth/bootstrapToken.js";
 
 function parseArgs(argv: string[]): CliOverrides {
   const overrides: CliOverrides = {};
@@ -27,6 +28,7 @@ async function main(): Promise<void> {
   const overrides = parseArgs(process.argv.slice(2));
   const config = loadConfig(overrides);
   setLogLevel(config.LOG_LEVEL as LogLevel);
+  bootstrapTokenFromEnv(config);
 
   if (config.MCP_TRANSPORT === "http") {
     await runHttpTransport(config);

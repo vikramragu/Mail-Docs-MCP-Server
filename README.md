@@ -61,6 +61,7 @@ All configuration is via environment variables (see [.env.example](.env.example)
 |---|---|---|
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | — (required) | OAuth Desktop client credentials |
 | `GOOGLE_TOKEN_PATH` | `~/.config/google-workspace-mcp/token.json` | Where the refresh token is stored |
+| `GOOGLE_TOKEN_JSON_B64` | — | Base64 of a `token.json` from `npm run auth`. Only needed on ephemeral hosts (e.g. Railway) — written to `GOOGLE_TOKEN_PATH` once at startup if that file doesn't already exist; see [docs/deployment-plan.md](docs/deployment-plan.md) §0.2 |
 | `ENABLE_GMAIL_SEND` / `ENABLE_GMAIL_DRAFTS` / `ENABLE_DOCS_APPEND` | `true` | Toggle each tool; disabled tools are omitted from `tools/list` entirely and their OAuth scope is not requested |
 | `DRY_RUN` | `false` | When `true`, tools validate and compose the request but perform no external write — Gmail tools return a decoded MIME preview, Docs tools return the planned `batchUpdate` requests |
 | `ALLOWED_RECIPIENT_DOMAINS` | empty (any) | Comma-separated allowlist; recipients outside it are rejected |
@@ -71,7 +72,10 @@ All configuration is via environment variables (see [.env.example](.env.example)
 | `MCP_HTTP_HOST` | `127.0.0.1` | Bind address; use `--host 0.0.0.0` to expose beyond localhost |
 | `MCP_HTTP_PORT` | `8080` | HTTP port |
 | `MCP_AUTH_TOKEN` | — | **Required** when `MCP_TRANSPORT=http`; clients must send `Authorization: Bearer <token>` |
+| `MCP_ALLOWED_ORIGINS` | empty | Comma-separated exact public origin(s), e.g. `https://your-app.up.railway.app`. **Required once `MCP_HTTP_HOST` isn't localhost** — otherwise every request carrying an `Origin` header is rejected (403) |
 | `LOG_LEVEL` | `info` | `debug`/`info`/`warn`/`error`, all written to stderr |
+
+The HTTP transport also exposes an unauthenticated `GET /healthz` (returns `200`) for platform health checks.
 
 ## Tools
 

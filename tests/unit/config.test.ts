@@ -17,6 +17,7 @@ const ENV_KEYS = [
   "MCP_HTTP_PORT",
   "MCP_HTTP_HOST",
   "MCP_AUTH_TOKEN",
+  "MCP_ALLOWED_ORIGINS",
   "LOG_LEVEL",
 ];
 const savedEnv: Record<string, string | undefined> = {};
@@ -53,6 +54,15 @@ describe("loadConfig", () => {
     expect(config.MCP_HTTP_HOST).toBe("127.0.0.1");
     expect(config.ALLOWED_RECIPIENT_DOMAINS).toEqual([]);
     expect(config.ALLOWED_DOCUMENT_IDS).toEqual([]);
+    expect(config.MCP_ALLOWED_ORIGINS).toEqual([]);
+  });
+
+  it("parses MCP_ALLOWED_ORIGINS as a comma-separated list", () => {
+    process.env.GOOGLE_CLIENT_ID = "id";
+    process.env.GOOGLE_CLIENT_SECRET = "secret";
+    process.env.MCP_ALLOWED_ORIGINS = "https://a.example.com, https://b.example.com";
+    const config = loadConfig();
+    expect(config.MCP_ALLOWED_ORIGINS).toEqual(["https://a.example.com", "https://b.example.com"]);
   });
 
   it("parses comma-separated allowlists, trimming whitespace", () => {

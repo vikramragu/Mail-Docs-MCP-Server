@@ -32,6 +32,7 @@ const envSchema = z.object({
   MCP_HTTP_PORT: z.number().int().positive().default(8080),
   MCP_HTTP_HOST: z.string().default("127.0.0.1"),
   MCP_AUTH_TOKEN: z.string().optional(),
+  MCP_ALLOWED_ORIGINS: z.array(z.string()).default([]),
 
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });
@@ -70,6 +71,7 @@ export function loadConfig(overrides: CliOverrides = {}): Config {
     MCP_HTTP_PORT: overrides.port ?? (process.env.MCP_HTTP_PORT ? Number(process.env.MCP_HTTP_PORT) : undefined),
     MCP_HTTP_HOST: overrides.host ?? process.env.MCP_HTTP_HOST ?? undefined,
     MCP_AUTH_TOKEN: process.env.MCP_AUTH_TOKEN || undefined,
+    MCP_ALLOWED_ORIGINS: parseList(process.env.MCP_ALLOWED_ORIGINS),
 
     LOG_LEVEL: process.env.LOG_LEVEL ?? undefined,
   };
