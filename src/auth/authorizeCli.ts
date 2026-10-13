@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "dotenv/config";
 import { createServer } from "node:http";
 import { exec } from "node:child_process";
 import { URL } from "node:url";
@@ -30,7 +31,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const { redirectUri, code } = await new Promise<{ redirectUri: string; code: string }>((resolve, reject) => {
+  let redirectUri = "";
+
+  const code = await new Promise<string>((resolve, reject) => {
     const server = createServer((req, res) => {
       if (!req.url) return;
       const url = new URL(req.url, "http://127.0.0.1");
@@ -53,16 +56,16 @@ async function main(): Promise<void> {
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end("Authorization complete. You can close this tab and return to the terminal.");
       server.close();
-
-      const address = server.address();
-      const port = typeof address === "object" && address ? address.port : 0;
-      resolve({ redirectUri: loopbackRedirectUri(port), code: authCode });
+      resolve(authCode);
     });
 
     server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       const port = typeof address === "object" && address ? address.port : 0;
-      const redirectUri = loopbackRedirectUri(port);
+      // Captured once here and reused for the token exchange below — `server.address()`
+      // returns null after `server.close()`, so recomputing it later would silently
+      // produce a different (wrong) redirect_uri and cause a redirect_uri_mismatch.
+      redirectUri = loopbackRedirectUri(port);
 
       const client = new OAuth2Client({
         clientId: config.GOOGLE_CLIENT_ID,

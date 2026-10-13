@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "dotenv/config";
 import { loadConfig, type CliOverrides } from "./config.js";
 import { setLogLevel, logger, type LogLevel } from "./logger.js";
 import { createServer } from "./server.js";
